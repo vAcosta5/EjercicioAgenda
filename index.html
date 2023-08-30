@@ -27,6 +27,10 @@
                 <input type="text" class="form-control mt-3" id="buscarNombre" placeholder="Buscar por nombre">
                 <ul class="list-group mt-3" id="listaContactos"></ul>
             </form>
+            <div id="mensajeError" class="alert alert-danger d-none">
+                <span id="mensajeTexto">Este contacto ya existe.</span>
+                <button type="button" class="btn-close" id="cerrarMensaje"></button>
+            </div>
         </main>
     </div>
     <script src="js/script.js"></script>

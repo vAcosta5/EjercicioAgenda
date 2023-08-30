@@ -3,14 +3,17 @@ const numeroInput = document.getElementById("numero");
 const btnAgregar = document.getElementById("btnAgregar");
 const buscarNombreInput = document.getElementById("buscarNombre");
 const listaContactos = document.getElementById("listaContactos");
+const mensajeError = document.getElementById("mensajeError");
+const cerrarMensaje = document.getElementById("cerrarMensaje");
+const mensajeTexto = document.getElementById("mensajeTexto");
 
 let contactos = JSON.parse(localStorage.getItem("contactos")) || [];
 
-function mostrarContactos() {
+function mostrarContactos(resultados = contactos) {
     listaContactos.innerHTML = "";
 
-    for (let i = 0; i < contactos.length; i++) {
-        const contacto = contactos[i];
+    for (let i = 0; i < resultados.length; i++) {
+        const contacto = resultados[i];
         const li = document.createElement("li");
         li.classList.add("list-group-item");
         li.innerHTML = `
@@ -20,22 +23,12 @@ function mostrarContactos() {
         `;
 
         const btnEliminar = li.querySelector(`#btnEliminar_${i}`);
-        btnEliminar.addEventListener("click", () => eliminarContacto(i));
+        btnEliminar.addEventListener("click", () => eliminarContacto(i, resultados));
 
         const btnEditar = li.querySelector(`#btnEditar_${i}`);
-        btnEditar.addEventListener("click", () => mostrarFormularioEdicion(i));
+        btnEditar.addEventListener("click", () => mostrarFormularioEdicion(i, resultados));
 
         listaContactos.appendChild(li);
-    }
-
-    const nombreEditar = localStorage.getItem("contactoAEditar");
-    if (nombreEditar) {
-        for (let i = 0; i < contactos.length; i++) {
-            if (contactos[i].nombre === nombreEditar) {
-                mostrarFormularioEdicion(i);
- 
-            }
-        }
     }
 }
 
@@ -43,23 +36,39 @@ function agregarContacto() {
     const nombre = nombreInput.value;
     const numero = numeroInput.value;
 
-    if (nombre !== "" && numero !== "") {
-        contactos.push({ nombre, numero });
-        localStorage.setItem("contactos", JSON.stringify(contactos));
-        mostrarContactos();
-        nombreInput.value = "";
-        numeroInput.value = "";
+    if (nombre != "" && numero != "") {
+        if (contactoExiste(nombre, numero)) {
+            mostrarMensajeError();
+        } else {
+            contactos.push({
+                nombre,
+                numero
+            });
+            localStorage.setItem("contactos", JSON.stringify(contactos));
+            mostrarContactos();
+            nombreInput.value = "";
+            numeroInput.value = "";
+            ocultarMensajeError()
+        }
     }
 }
 
-function eliminarContacto(index) {
-    contactos.splice(index, 1);
+function eliminarContacto(index, resultadosBusqueda) {
+    const contactoEliminado = resultadosBusqueda[index];
+    const nuevosContactos = [];
+    for (const contacto of contactos) {
+        if (!(contacto.nombre === contactoEliminado.nombre && contacto.numero === contactoEliminado.numero)) {
+            nuevosContactos.push(contacto);
+        }
+    }
+    contactos = nuevosContactos;
     localStorage.setItem("contactos", JSON.stringify(contactos));
+    buscarNombreInput.value = "";
     mostrarContactos();
 }
 
-function mostrarFormularioEdicion(index) {
-    const contacto = contactos[index];
+function mostrarFormularioEdicion(index, resultadosBusqueda) {
+    const contacto = resultadosBusqueda[index];
 
     const formularioEdicion = document.createElement("div");
     formularioEdicion.innerHTML = `
@@ -76,22 +85,32 @@ function mostrarFormularioEdicion(index) {
     `;
 
     const btnGuardarEdicion = formularioEdicion.querySelector("#btnGuardarEdicion");
-    btnGuardarEdicion.addEventListener("click", () => guardarEdicionContacto(index));
+    btnGuardarEdicion.addEventListener("click", () => guardarEdicionContacto(index, resultadosBusqueda));
 
     const btnCancelarEdicion = formularioEdicion.querySelector("#btnCancelarEdicion");
-    btnCancelarEdicion.addEventListener("click", () => mostrarContactos());
+    btnCancelarEdicion.addEventListener("click", () => mostrarContactos(resultadosBusqueda));
 
     listaContactos.replaceChild(formularioEdicion, listaContactos.children[index]);
 }
 
-function guardarEdicionContacto(index) {
+function guardarEdicionContacto(index, resultadosBusqueda) {
     const nuevoNombre = document.getElementById("editNombre").value;
     const nuevoNumero = document.getElementById("editNumero").value;
 
     if (nuevoNombre !== "" && nuevoNumero !== "") {
-        contactos[index].nombre = nuevoNombre;
-        contactos[index].numero = nuevoNumero;
-        localStorage.setItem("contactos", JSON.stringify(contactos));
+        const contactoEditado = resultadosBusqueda[index];
+        if (contactoExiste(nuevoNombre, nuevoNumero)) {
+            mostrarMensajeError();
+        } else {
+            for (const contactoOriginal of contactos) {
+                if (contactoOriginal.nombre === contactoEditado.nombre && contactoOriginal.numero === contactoEditado.numero) {
+                    contactoOriginal.nombre = nuevoNombre;
+                    contactoOriginal.numero = nuevoNumero;
+                    localStorage.setItem("contactos", JSON.stringify(contactos));
+                }
+            }
+        }
+        buscarNombreInput.value = "";
         mostrarContactos();
     }
 }
@@ -100,30 +119,32 @@ function buscarContactoPorNombre(nombreBuscado) {
     const resultados = contactos.filter(contacto =>
         contacto.nombre.toLowerCase().includes(nombreBuscado.toLowerCase())
     );
-
-    listaContactos.innerHTML = "";
-    for (let i = 0; i < resultados.length; i++) {
-        const contacto = resultados[i];
-        const li = document.createElement("li");
-        li.classList.add("list-group-item");
-        li.innerHTML = `
-            <b>Nombre: ${contacto.nombre} | Número: ${contacto.numero}</b>
-            <button type="button" class="btn btn-danger btn-sm" id="btnEliminar_${i}">Eliminar</button>
-            <button type="button" class="btn btn-secondary btn-sm" id="btnEditar_${i}">Editar</button>
-        `;
-
-        const btnEliminar = li.querySelector(`#btnEliminar_${i}`);
-        btnEliminar.addEventListener("click", () => eliminarContacto(contacto));
-
-        const btnEditar = li.querySelector(`#btnEditar_${i}`);
-        btnEditar.addEventListener("click", () => mostrarFormularioEdicion(i));
-
-        listaContactos.appendChild(li);
-    }
+    return resultados;
 }
 
+function mostrarMensajeError() {
+    mensajeError.classList.remove("d-none");
+}
+
+function ocultarMensajeError() {
+    mensajeError.classList.add("d-none");
+}
+
+function contactoExiste(nombre, numero) {
+    for (const contactoRecorrido of contactos) {
+        if (contactoRecorrido.nombre === nombre || contactoRecorrido.numero === numero) {
+            return true;
+        }
+    }
+    return false;
+}
 
 btnAgregar.addEventListener("click", agregarContacto);
-buscarNombreInput.addEventListener("input", () => buscarContactoPorNombre(buscarNombreInput.value.toLowerCase()));
+cerrarMensaje.addEventListener("click", ocultarMensajeError);
+
+buscarNombreInput.addEventListener("input", () => {
+    const resultados = buscarContactoPorNombre(buscarNombreInput.value.toLowerCase());
+    mostrarContactos(resultados);
+});
 
 mostrarContactos();
