@@ -8,6 +8,7 @@ const cerrarMensaje = document.getElementById("cerrarMensaje");
 const mensajeTexto = document.getElementById("mensajeTexto");
 
 let contactos = JSON.parse(localStorage.getItem("contactos")) || [];
+let edicionEnProceso = false;
 
 function mostrarContactos(resultados = contactos) {
     listaContactos.innerHTML = "";
@@ -68,6 +69,12 @@ function eliminarContacto(index, resultadosBusqueda) {
 }
 
 function mostrarFormularioEdicion(index, resultadosBusqueda) {
+    if (edicionEnProceso) {
+        return;
+    }
+
+    edicionEnProceso = true;
+
     const contacto = resultadosBusqueda[index];
 
     const formularioEdicion = document.createElement("div");
@@ -99,20 +106,41 @@ function guardarEdicionContacto(index, resultadosBusqueda) {
 
     if (nuevoNombre !== "" && nuevoNumero !== "") {
         const contactoEditado = resultadosBusqueda[index];
-        if (contactoExiste(nuevoNombre, nuevoNumero)) {
-            mostrarMensajeError();
-        } else {
-            for (const contactoOriginal of contactos) {
-                if (contactoOriginal.nombre === contactoEditado.nombre && contactoOriginal.numero === contactoEditado.numero) {
-                    contactoOriginal.nombre = nuevoNombre;
-                    contactoOriginal.numero = nuevoNumero;
-                    localStorage.setItem("contactos", JSON.stringify(contactos));
+        const cambiosRealizados = (
+            contactoEditado.nombre !== nuevoNombre ||
+            contactoEditado.numero !== nuevoNumero
+        );
+
+        if (cambiosRealizados) {
+            let nombreExiste = false;
+            let numeroExiste = false;
+
+            for (let i = 0; i < contactos.length; i++) {
+                if (i !== index) {
+                    if (contactos[i].nombre === nuevoNombre) {
+                        nombreExiste = true;
+                    }
+                    if (contactos[i].numero === nuevoNumero) {
+                        numeroExiste = true;
+                    }
                 }
             }
+
+            if (!nombreExiste && !numeroExiste) {
+                contactoEditado.nombre = nuevoNombre;
+                contactoEditado.numero = nuevoNumero;
+                localStorage.setItem("contactos", JSON.stringify(contactos));
+            } else {
+                mostrarMensajeError();
+                return;
+            }
         }
+        
         buscarNombreInput.value = "";
         mostrarContactos();
     }
+
+    edicionEnProceso = false;
 }
 
 function buscarContactoPorNombre(nombreBuscado) {
