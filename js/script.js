@@ -49,7 +49,7 @@ function agregarContacto() {
             mostrarContactos();
             nombreInput.value = "";
             numeroInput.value = "";
-            ocultarMensajeError()
+            ocultarMensajeError();
         }
     }
 }
@@ -65,6 +65,7 @@ function eliminarContacto(index, resultadosBusqueda) {
     contactos = nuevosContactos;
     localStorage.setItem("contactos", JSON.stringify(contactos));
     buscarNombreInput.value = "";
+    ocultarMensajeError();
     mostrarContactos();
 }
 
@@ -85,10 +86,10 @@ function mostrarFormularioEdicion(index, resultadosBusqueda) {
         </div>
         <div class="mb-3">
             <label for="editNumero" class="form-label">Nuevo Número:</label>
-            <input type="text" class="form-control" id="editNumero" value="${contacto.numero}">
+            <input type="number" class="form-control" id="editNumero" value="${contacto.numero}">
         </div>
         <button type="button" class="btn btn-primary" id="btnGuardarEdicion">Guardar</button>
-        <button type="button" class="btn btn-secondary" id="btnCancelarEdicion">Cancelar</button>
+        <button type="button" class="btn btn-secondary" id="btnCancelarEdicion" onclick="ocultarMensajeError()">Cancelar</button>
     `;
 
     const btnGuardarEdicion = formularioEdicion.querySelector("#btnGuardarEdicion");
@@ -98,6 +99,7 @@ function mostrarFormularioEdicion(index, resultadosBusqueda) {
     btnCancelarEdicion.addEventListener("click", () => mostrarContactos(resultadosBusqueda));
 
     listaContactos.replaceChild(formularioEdicion, listaContactos.children[index]);
+    ocultarMensajeError();
 }
 
 function guardarEdicionContacto(index, resultadosBusqueda) {
@@ -137,6 +139,7 @@ function guardarEdicionContacto(index, resultadosBusqueda) {
         }
         
         buscarNombreInput.value = "";
+        ocultarMensajeError();
         mostrarContactos();
     }
 
@@ -176,3 +179,5 @@ buscarNombreInput.addEventListener("input", () => {
 });
 
 mostrarContactos();
+
+
